@@ -23,11 +23,13 @@ rs_getconfig() {
 
 rs_iptables_add() {
 	echo -n > /dev/null
+	ipset create 直接访问 iphash
 	iptables -t nat -N $appname 
 	iptables -t nat -A PREROUTING -i br-lan -j $appname
 	iptables -t nat -A OUTPUT -j $appname
-	iptables -t nat -A $appname -m salist --salist local --match-dip -j RETURN 
-	iptables -t nat -A $appname -m salist --salist hiwifi --match-dip -j RETURN 
+	iptables -t nat -A $appname -m salist --salist local --match-dip -j RETURN
+	iptables -t nat -A $appname -m salist --salist hiwifi --match-dip -j RETURN
+	iptables -t nat -A $appname -m set --match-set 直接访问 dst -j RETURN
 	iptables -t nat -A $appname -d $lan_ip/24 -j RETURN
 	iptables -t nat -A $appname -d $wanip/24 -j RETURN
 	iptables -t nat -A $appname -d $server_ip/32 -j RETURN
@@ -45,12 +47,17 @@ rs_iptables_del() {
 	iptables -t nat -D OUTPUT -j $appname
 	iptables -t nat -F $appname
 	iptables -t nat -X $appname
+	ipset destroy 直接访问
 }
 
 rs_getconfig
 
 start() {
 	rs_iptables_add
+	
+	while read p; do
+		echo "ipset=/.$p/直接访问" >> /tmp/dnsmasq.d/直接访问域名.conf
+	done </etc/gw-shadowsocks/直接访问域名.txt
 
 	cp $appdir/$appname.dnslist /tmp/dnsmasq.d/
 	[ "$mode" == "1" ] && {
@@ -67,7 +74,7 @@ stop() {
 	rs_iptables_del
 	
 	rm /tmp/dnsmasq.d/$appname.dnslist
-	rm /tmp/dnsmasq.d/$appname.usr.dnslist
+	rm /tmp/dnsmasq.d/直接访问域名.conf
 	/etc/init.d/dnsmasq restart
 }
 
