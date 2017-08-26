@@ -1,6 +1,6 @@
 #!/bin/sh /etc/rc.common
 
-#START=80
+#START=99
 APP=gw_redsocks
 PID_FILE=/var/run/$APP.pid
 
@@ -19,7 +19,6 @@ rs_getconfig() {
 	rs_port_tcp=$(uci get shadowsocks.shadowsocks.rs_port)
 	mode=$(uci get shadowsocks.shadowsocks.defaultroute)
 	server_ip=$(uci get shadowsocks.shadowsocks.server)
-    user_urls=$(uci get shadowsocks.adv.url)
 }
 
 rs_iptables_add() {
@@ -37,7 +36,7 @@ rs_iptables_add() {
 		iptables -t nat -A $appname -m salist --salist china --match-dip -j RETURN
 	}
 	
-    iptables -t nat -A $appname -p tcp -j DNAT --to-destination $lan_ip:$rs_port_tcp
+	iptables -t nat -A $appname -p tcp -j DNAT --to-destination $lan_ip:$rs_port_tcp
 }
 
 rs_iptables_del() {
@@ -53,19 +52,13 @@ rs_getconfig
 start() {
 	rs_iptables_add
 
-    echo > /tmp/dnsmasq.d/$appname.usr.dnslist
-    for url in $user_urls
-    do
-        echo "server=/$url/127.0.0.1#53535" >> /tmp/dnsmasq.d/$appname.usr.dnslist
-    done
-
 	cp $appdir/$appname.dnslist /tmp/dnsmasq.d/
 	[ "$mode" == "1" ] && {
-        cat >> /tmp/dnsmasq.d/$appname.dnslist << EOF
+	cat >> /tmp/dnsmasq.d/$appname.dnslist << EOF
 no-resolv
 server=127.0.0.1#53535
 EOF
-    }
+	}
 
 	/etc/init.d/dnsmasq restart
 }
@@ -74,11 +67,11 @@ stop() {
 	rs_iptables_del
 	
 	rm /tmp/dnsmasq.d/$appname.dnslist
-    rm /tmp/dnsmasq.d/$appname.usr.dnslist
+	rm /tmp/dnsmasq.d/$appname.usr.dnslist
 	/etc/init.d/dnsmasq restart
 }
 
 restart() {
-   stop
-   start
+	stop
+	start
 }
