@@ -48,6 +48,9 @@ start() {
 
 		service_start /usr/bin/dns2socks 127.0.0.1:$local_port $dnsserver 127.0.0.1:53535 -d -q
 		/etc/init.d/gw-redsocks start
+		
+		# 将所有的DNS UDP请求重定向到路由器的DNS服务，避免如Google Chromecast和Google Home等设备直接访问8.8.8.8，导致解析失败的问题
+		iptables -t nat -A PREROUTING -p udp --dport 53 -j DNAT --to-destination 192.168.199.1
 	fi
 }
 
